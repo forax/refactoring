@@ -18,7 +18,6 @@ package pro.tremblay.core;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,7 +54,7 @@ public class ReportingServiceTest {
 
     @Test
     public void calculateReturnOnInvestmentYTD_noTransactionAndPosition() {
-        BigDecimal roi = reportingService.calculateReturnOnInvestmentYTD(current, Collections.emptyList());
+        Percentage roi = reportingService.calculateReturnOnInvestmentYTD(current, Collections.emptyList());
         assertThat(roi).isEqualTo("0.00");
     }
 
@@ -69,7 +68,7 @@ public class ReportingServiceTest {
                         .type(TransactionType.DEPOSIT)
                         .date(hundredDaysAgo));
 
-        BigDecimal roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
+        Percentage roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
         assertThat(roi).isEqualTo("180.00"); // (200$ - 100$) / 100$ * 100% * 360 days / 200 days
     }
 
@@ -88,7 +87,7 @@ public class ReportingServiceTest {
         expect(priceService.getPrice(today, Security.GOOGL)).andStubReturn(amnt(2));
         replay(priceService);
 
-        BigDecimal roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
+        Percentage roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
 
         // Cash value now: 0, Sec value now: 50 x 2 = 100, Total: 100
         // Cash value initial: 100, Sec value now: 0, Total: 100
