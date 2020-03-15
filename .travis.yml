@@ -1,6 +1,6 @@
 sudo: false
 language: java
-jdk: openjdk-ea
+jdk: openjdk11
 
 env:
   - PRO_SPECIAL_BUILD='early-access'
