@@ -18,31 +18,33 @@ import java.lang.System;
 
 /**
  * Script to run the benchmark on multiple git versions of the project.
- * With Java < 10, do {@code javac RunBenchmarkSuite.java && java RunBenchmarkSuite commit1 commit2 ...}.
- * With Java >= 10 do {@code java RunBenchmarkSuite.java commit1 commit2 ...}, e.g. {@code java RunBenchmarkSuite.java master henri}.
+ * With Java >= 10 do {@code java RunBenchmarkSuite.java commit1 commit2 ...},
+ * e.g. {@code java RunBenchmarkSuite.java master henri}.
  */
 public class RunBenchmarkSuite {
-    public static void main(String[] args) throws Exception {
-        if (args.length == 0) {
-            System.out.println("Usage: RunBenchmarkSuite.java commit1 commit2 ...");
-            System.exit(1);
-        }
-        for (String commit : args) {
-            System.out.println("################# " + commit + " #################");
-            command("git", "checkout", commit);
-            command("mvn", "clean", "package", "-DskipTests");
-            command("java", "-jar", "benchmark/target/benchmarks.jar");
-        }
-
-        command("git", "checkout", "master");
+  public static void main(String[] args) throws Exception {
+    if (args.length == 0) {
+      System.out.println("Usage: RunBenchmarkSuite.java commit1 commit2 ...");
+      System.exit(1);
+    }
+    for (var commit : args) {
+      System.out.println("################# " + commit + " #################");
+      command("git", "checkout", commit);
+      command("java", "pro_wrapper.java");
+      command("./pro/bin/java",
+          "--enable-preview",
+          "--module-path", "deps:target/test/artifact/",
+          "-m", "pro.tremblay.core/pro.tremblay.core.benchmark.ReportingServiceBenchmark");
     }
 
-    private static void command(String... args) throws Exception {
-        ProcessBuilder builder = new ProcessBuilder(args)
-            .redirectErrorStream(true)
-            .redirectOutput(ProcessBuilder.Redirect.INHERIT);
-        Process process = builder.start();
+    command("git", "checkout", "master");
+  }
 
-        process.waitFor();
-    }
+  private static void command(String... args) throws Exception {
+    var builder = new ProcessBuilder(args).redirectErrorStream(true)
+        .redirectOutput(ProcessBuilder.Redirect.INHERIT);
+    var process = builder.start();
+
+    process.waitFor();
+  }
 }

@@ -1,10 +1,18 @@
-language: java
-jdk:
-    - openjdk8
 sudo: false
+language: java
+jdk: openjdk-ea
+
+env:
+  - PRO_SPECIAL_BUILD='early-access'
+
 cache:
   directories:
-    # Maven
-    - $HOME/.m2
+    # Pro
+    - $HOME/deps
+
+install:
+  - java pro_wrapper.java version
+
 script:
-  - mvn verify
+  - ./pro/bin/pro
+

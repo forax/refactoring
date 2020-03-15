@@ -2,3 +2,9 @@
 target/
 *.iml
 /RunBenchmarkSuite.class
+/bin/
+/pro/
+/target/
+/deps/
+/.classpath
+/.project

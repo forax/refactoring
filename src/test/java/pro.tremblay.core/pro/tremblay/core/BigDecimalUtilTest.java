@@ -15,23 +15,22 @@
  */
 package pro.tremblay.core;
 
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static pro.tremblay.core.BigDecimalUtil.bd;
 
 import java.math.BigDecimal;
 
-import static org.assertj.core.api.Assertions.*;
-import static pro.tremblay.core.BigDecimalUtil.bd;
+import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("static-method")
 public class BigDecimalUtilTest {
+  @Test
+  public void bdInt() {
+    assertEquals(BigDecimal.valueOf(4), bd(4));
+  }
 
-    @Test
-    public void bdInt() {
-        assertThat(bd(4)).isEqualTo("4");
-    }
-
-    @Test
-    public void bdString() {
-        assertThat(bd("4.12")).isEqualTo("4.12");
-    }
-
+  @Test
+  public void bdString() {
+    assertEquals(new BigDecimal("4.12"), bd("4.12"));
+  }
 }
