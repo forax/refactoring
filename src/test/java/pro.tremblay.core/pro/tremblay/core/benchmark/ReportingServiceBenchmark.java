@@ -27,7 +27,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import pro.tremblay.core.Position;
@@ -63,26 +62,27 @@ public class ReportingServiceBenchmark {
 
   @Setup
   public void setup() {
-    Security[] securities = Security.values();
-    Collection<SecurityPosition> securityPositions = Stream.of(securities)
+    var securities = Security.values();
+    var securityPositions = Stream.of(securities)
         .map(sec -> new SecurityPosition().quantity(BigDecimal.valueOf(1_000)).security(sec))
         .collect(Collectors.toList());
 
     position = new Position().cash(BigDecimal.valueOf(1_000_000)).securityPositions(securityPositions);
 
-    LocalDate now = LocalDate.now();
-    int dayOfYear = now.getDayOfYear();
+    var now = LocalDate.now();
+    var dayOfYear = now.getDayOfYear();
 
-    TransactionType[] transactionTypes = TransactionType.values();
+    var transactionTypes = TransactionType.values();
 
-    Random random = new Random(0);
-    transactions = random.ints(100, 1, 100).mapToObj(quantity -> {
-      Transaction t = new Transaction();
-      return t.date(now.minusDays(random.nextInt(dayOfYear))).cash(BigDecimal.valueOf(random.nextInt(1_000)))
-          .type(transactionTypes[random.nextInt(transactionTypes.length)])
-          .quantity(t.getType().hasQuantity() ? BigDecimal.valueOf(quantity) : BigDecimal.ZERO)
-          .security(t.getType().hasQuantity() ? securities[random.nextInt(securities.length)] : null);
-    }).collect(Collectors.toList());
+    var random = new Random(0);
+    transactions = random.ints(100, 1, 100).mapToObj(value -> {
+      var type = transactionTypes[random.nextInt(transactionTypes.length)];
+      var date = now.minusDays(random.nextInt(dayOfYear));
+      var cash = BigDecimal.valueOf(random.nextInt(1_000));
+      var security = type.hasQuantity() ? securities[random.nextInt(securities.length)] : null;
+      var quantity = type.hasQuantity() ? BigDecimal.valueOf(value) : BigDecimal.ZERO;
+      return new Transaction(type, date, cash, security, quantity);
+    }).collect(Collectors.toUnmodifiableList());
   }
 
   @Benchmark
@@ -91,7 +91,7 @@ public class ReportingServiceBenchmark {
   }
 
   public static void main(String[] args) throws RunnerException {
-    Options opt = new OptionsBuilder().include(ReportingServiceBenchmark.class.getName()).build();
+    var opt = new OptionsBuilder().include(ReportingServiceBenchmark.class.getName()).build();
     new Runner(opt).run();
   }
 }

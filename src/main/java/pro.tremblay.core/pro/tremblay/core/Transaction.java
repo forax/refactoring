@@ -15,69 +15,36 @@
  */
 package pro.tremblay.core;
 
-import javax.annotation.concurrent.NotThreadSafe;
+import javax.annotation.concurrent.ThreadSafe;
+
+import static java.util.Objects.requireNonNull;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
  * A transaction that happened on a position.
  */
-@NotThreadSafe
-public class Transaction {
-
-    /** Type of transaction **/
-    private TransactionType type;
-    /** Date at which the transaction occurred */
-    private LocalDate date;
-    /** Amount of cash exchanged during the transaction. The amount is always positive, the side of the transaction is determined by its type */
-    private BigDecimal cash;
-    /** Securities bought or sold if securities are involved in the transaction */
-    private Security security;
-    /** Quantity of securities exchanged during the transaction. The quantity is always positive, the side of the transaction is determined by its type */
-    private BigDecimal quantity;
-
-    public TransactionType getType() {
-        return type;
+@ThreadSafe
+public record Transaction(
+    TransactionType type,   // Type of transaction
+    LocalDate date,         // Date at which the transaction occurred
+    BigDecimal cash,        // Amount of cash exchanged during the transaction.
+                            // The amount is always positive, the side of the transaction is determined by its type
+    Security security,      // Security bought or sold if a security is involved in the transaction
+    BigDecimal quantity     // Quantity of securities exchanged during the transaction.
+                            // The quantity is always positive, the side of the transaction is determined by its type
+    ) {
+  public Transaction {
+    requireNonNull(type);
+    requireNonNull(date);
+    requireNonNull(cash);
+    requireNonNull(quantity);
+    if(cash.compareTo(BigDecimal.ZERO) < 0) {
+      throw new IllegalArgumentException("cash must be posotive");
     }
-
-    public Transaction type(TransactionType type) {
-        this.type = type;
-        return this;
+    if(quantity.compareTo(BigDecimal.ZERO) < 0) {
+      throw new IllegalArgumentException("quantity must be posotive");
     }
-
-    public LocalDate getDate() {
-        return date;
-    }
-
-    public Transaction date(LocalDate date) {
-        this.date = date;
-        return this;
-    }
-
-    public BigDecimal getCash() {
-        return cash;
-    }
-
-    public Transaction cash(BigDecimal cash) {
-        this.cash = cash;
-        return this;
-    }
-
-    public Security getSecurity() {
-        return security;
-    }
-
-    public Transaction security(Security security) {
-        this.security = security;
-        return this;
-    }
-
-    public BigDecimal getQuantity() {
-        return quantity;
-    }
-
-    public Transaction quantity(BigDecimal quantity) {
-        this.quantity = quantity;
-        return this;
-    }
+  }
 }

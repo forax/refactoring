@@ -15,25 +15,28 @@
  */
 package pro.tremblay.core;
 
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
+import static java.time.LocalDate.now;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static pro.tremblay.core.BigDecimalUtil.bd;
+import static pro.tremblay.core.Security.GOOGL;
+import static pro.tremblay.core.TransactionType.BUY;
+import static pro.tremblay.core.TransactionType.DEPOSIT;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("static-method")
 public class ReportingServiceTest {
   private final ReportingService reportingService = new ReportingService();
 
-  private final Position current = new Position().cash(BigDecimal.ZERO).securityPositions(new ArrayList<>());
+  private final Position current = new Position().cash(ZERO).securityPositions(new ArrayList<>());
 
   @BeforeEach
   public void setup() {
@@ -47,46 +50,45 @@ public class ReportingServiceTest {
 
   @Test
   public void calculateReturnOnInvestmentYTD_noTransactionAndPosition() {
-    BigDecimal roi = reportingService.calculateReturnOnInvestmentYTD(current, Collections.emptyList());
-    assertEquals(bd("0.00"), roi);
+    var roi = reportingService.calculateReturnOnInvestmentYTD(current, Collections.emptyList());
+    assertEquals(bd(0.00), roi);
   }
 
   @Test
   public void calculateReturnOnInvestmentYTD_cashAdded() {
     current.cash(bd(200));
 
-    Collection<Transaction> transactions = Collections
-        .singleton(new Transaction().cash(bd(100)).type(TransactionType.DEPOSIT).date(LocalDate.now().minusDays(10)));
+    var now = now();
+    var transactions = List.of(new Transaction(DEPOSIT, now.minusDays(10), bd(100), null, ZERO));
 
-    BigDecimal roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
+    var roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
 
     // Current cash value = 200$, Current security value = 0$
     // Initial cash value = 100$, Initial cash value = 0$
     // Year length = 360
-    BigDecimal actual = BigDecimal.valueOf((200.0 - 100.0) / 100.0 * 100.0 * 360.0 / LocalDate.now().getDayOfYear())
-        .setScale(2, RoundingMode.HALF_UP);
+    var actual = bd((200.0 - 100.0) / 100.0 * 100.0 * 360.0 / now.getDayOfYear());
     assertEquals(actual, roi);
   }
 
   @Test
   public void calculateReturnOnInvestmentYTD_secBought() {
-    current.getSecurityPositions().add(new SecurityPosition().security(Security.GOOGL).quantity(bd(50)));
+    current.getSecurityPositions().add(new SecurityPosition().security(GOOGL).quantity(bd(50)));
 
-    BigDecimal priceAtTransaction = PriceService.getPrice(LocalDate.now().minusDays(10), Security.GOOGL);
+    var now = now();
+    var priceAtTransaction = PriceService.getPrice(now.minusDays(10), GOOGL);
 
-    Transaction transaction = new Transaction().security(Security.GOOGL).quantity(bd(50))
-        .cash(priceAtTransaction.multiply(bd(50))).type(TransactionType.BUY).date(LocalDate.now().minusDays(10));
-    Collection<Transaction> transactions = Collections.singleton(transaction);
+    var transaction = new Transaction(BUY, now.minusDays(10), priceAtTransaction.multiply(bd(50)), GOOGL, bd(50));
+    var transactions = Collections.singleton(transaction);
 
-    BigDecimal roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
+    var roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
 
-    BigDecimal priceNow = PriceService.getPrice(LocalDate.now(), Security.GOOGL);
+    var priceNow = PriceService.getPrice(now, GOOGL);
 
-    BigDecimal initialCashValue = transaction.getCash(); // initialSecValue = 0
-    BigDecimal currentSecValue = priceNow.multiply(bd(50)); // currentCashValue = 0
+    var initialCashValue = transaction.cash(); // initialSecValue = 0
+    var currentSecValue = priceNow.multiply(bd(50)); // currentCashValue = 0
 
-    BigDecimal actual = currentSecValue.subtract(initialCashValue).divide(initialCashValue, 10, RoundingMode.HALF_UP)
-        .multiply(bd(100)).multiply(bd(360)).divide(bd(LocalDate.now().getDayOfYear()), 2, RoundingMode.HALF_UP);
+    var actual = currentSecValue.subtract(initialCashValue).divide(initialCashValue, 10, HALF_UP)
+        .multiply(bd(100)).multiply(bd(360)).divide(bd(now.getDayOfYear()), 2, HALF_UP);
     assertEquals(actual, roi);
   }
 }

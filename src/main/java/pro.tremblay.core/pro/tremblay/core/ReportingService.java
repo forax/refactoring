@@ -65,7 +65,7 @@ public class ReportingService {
         working.securityPositions(positions);
 
         List<Transaction> orderedTransaction = transactions.stream()
-                .sorted(Comparator.comparing(Transaction::getDate).reversed())
+                .sorted(Comparator.comparing(Transaction::date).reversed())
                 .collect(Collectors.toList());
 
         LocalDate today = now;
@@ -76,7 +76,7 @@ public class ReportingService {
             }
             Transaction transaction = orderedTransaction.get(transactionIndex);
             // It's a transaction on the date, process it
-            if (transaction.getDate().equals(today)) {
+            if (transaction.date().equals(today)) {
                 revert(working, transaction);
             }
             today = today.minusDays(1);
@@ -114,37 +114,37 @@ public class ReportingService {
     }
 
     private void revert(Position current, Transaction transaction) {
-        switch (transaction.getType()) {
+        switch (transaction.type()) {
             case BUY: {
-                current.cash(current.getCash().add(transaction.getCash()));
+                current.cash(current.getCash().add(transaction.cash()));
                 SecurityPosition pos = current.getSecurityPositions().stream()
-                        .filter(sec -> sec.getSecurity().equals(transaction.getSecurity()))
+                        .filter(sec -> sec.getSecurity().equals(transaction.security()))
                         .findAny()
                         .orElse(null);
                 if (pos == null) {
-                    pos = new SecurityPosition().quantity(BigDecimal.ZERO).security(transaction.getSecurity());
+                    pos = new SecurityPosition().quantity(BigDecimal.ZERO).security(transaction.security());
                     current.getSecurityPositions().add(pos);
                 }
-                pos.quantity(pos.getQuantity().subtract(transaction.getQuantity()));
+                pos.quantity(pos.getQuantity().subtract(transaction.quantity()));
                 break;
             }
             case SELL:
-                current.cash(current.getCash().subtract(transaction.getCash()));
+                current.cash(current.getCash().subtract(transaction.cash()));
                 SecurityPosition pos = current.getSecurityPositions().stream()
-                        .filter(sec -> sec.getSecurity().equals(transaction.getSecurity()))
+                        .filter(sec -> sec.getSecurity().equals(transaction.security()))
                         .findAny()
                         .orElse(null);
                 if (pos == null) {
-                    pos = new SecurityPosition().quantity(BigDecimal.ZERO).security(transaction.getSecurity());
+                    pos = new SecurityPosition().quantity(BigDecimal.ZERO).security(transaction.security());
                     current.getSecurityPositions().add(pos);
                 }
-                pos.quantity(pos.getQuantity().add(transaction.getQuantity()));
+                pos.quantity(pos.getQuantity().add(transaction.quantity()));
                 break;
             case DEPOSIT:
-                current.cash(current.getCash().subtract(transaction.getCash()));
+                current.cash(current.getCash().subtract(transaction.cash()));
                 break;
             case WITHDRAWAL:
-                current.cash(current.getCash().add(transaction.getCash()));
+                current.cash(current.getCash().add(transaction.cash()));
                 break;
         }
     }

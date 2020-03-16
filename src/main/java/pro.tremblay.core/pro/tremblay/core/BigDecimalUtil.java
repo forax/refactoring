@@ -17,6 +17,9 @@ package pro.tremblay.core;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
+
+import static java.math.RoundingMode.HALF_UP;
+
 import java.math.BigDecimal;
 
 /**
@@ -35,5 +38,10 @@ public final class BigDecimalUtil {
         return BigDecimal.valueOf(value);
     }
 
+    @Nonnull
+    public static BigDecimal bd(double value) {
+        return BigDecimal.valueOf(value).setScale(2, HALF_UP);
+    }
+    
     private BigDecimalUtil() {}
 }
