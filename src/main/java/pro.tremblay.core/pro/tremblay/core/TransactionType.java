@@ -22,39 +22,27 @@ import javax.annotation.concurrent.ThreadSafe;
  */
 @ThreadSafe
 public enum TransactionType {
-    /** Securities were bought using cash */
-    BUY {
-        @Override
-        public boolean hasQuantity() {
-            return true;
-        }
-    },
-    /** Securities were sold to get cash */
-    SELL {
-        @Override
-        public boolean hasQuantity() {
-            return true;
-        }
-    },
-    /** Cash was added to the position */
-    DEPOSIT {
-        @Override
-        public boolean hasQuantity() {
-            return false;
-        }
-    },
-    /** Cash was removed from the position */
-    WITHDRAWAL {
-        @Override
-        public boolean hasQuantity() {
-            return false;
-        }
-    };
+  /** Securities were bought using cash */
+  BUY(true),
+  /** Securities were sold to get cash */
+  SELL(true),
+  /** Cash was added to the position */
+  DEPOSIT(false),
+  /** Cash was removed from the position */
+  WITHDRAWAL(false);
 
-    /**
-     * Tells if this type of transactions involve a security movement.
-     *
-     * @return if some security quantity was exchanged
-     */
-    public abstract boolean hasQuantity();
+  private final boolean hasQuantity;
+
+  private TransactionType(boolean hasQuantity) {
+    this.hasQuantity = hasQuantity;
+  }
+
+  /**
+   * Tells if this type of transactions involve a security movement.
+   *
+   * @return if some security quantity was exchanged
+   */
+  public boolean hasQuantity() {
+    return hasQuantity;
+  }
 }
