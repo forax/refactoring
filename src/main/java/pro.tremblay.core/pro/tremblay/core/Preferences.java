@@ -15,43 +15,93 @@
  */
 package pro.tremblay.core;
 
+import static java.util.Objects.requireNonNull;
+
+import java.util.Optional;
+import java.util.function.Function;
+
 import javax.annotation.concurrent.ThreadSafe;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
- * Global configuration of the application.
+ * A set of preferences of the application.
  */
 @ThreadSafe
-public class Preferences {
-
-    private static final Preferences INSTANCE = new Preferences();
-
-    public static Preferences preferences() {
-        return INSTANCE;
+public interface Preferences {
+  /**
+   * A preference key. 
+   * 
+   * @param <T> the type of the key.
+   */
+  public record Key<T>(
+      /** Name of the preference key */
+      String name,
+      /** Type of the preference key */
+      Class<T> type,
+      /** Function that decodes a String as a value of the type of the preference key */
+      Function<? super String, ? extends T> decoder) {
+    public Key {
+      requireNonNull(name);
+      requireNonNull(type);
+      requireNonNull(decoder);
     }
-
-    private final ConcurrentMap<String, String> preferences = new ConcurrentHashMap<>();
-
-    private Preferences() {}
-
-    public void put(String key, String value) {
-        preferences.put(key, value);
+  }
+  
+  /**
+   * Returns the value of the key as an optional.
+   * @param <T> the type of the key.
+   * @param key the preference key.
+   * @return the value of the key as an optonal.
+   */
+  <T> Optional<T> get(Key<T> key);
+  
+  /**
+   * Returns a set preference that first look a key into the current preferences
+   * and if not found look up to the preferences taken as parameter.
+   * @param preferences the preferences used if the key is not found in the
+   *        current preferences.
+   * @return
+   */
+  default Preferences or(Preferences preferences) {
+    return new Preferences() {
+      @Override
+      public <T> Optional<T> get(Key<T> key) {
+        return Preferences.this.get(key).or(() -> preferences.get(key));
+      }
+    };
+  }
+  
+  /**
+   * Creates a set of preferences with only one key/value.
+   * @param <T> the type of the key
+   * @param key the key
+   * @param value the value
+   * @return a newly created preference with the key and the value. 
+   */
+  public static <T> Preferences of(Key<T> key, T value) {
+    return new Preferences() {
+      @Override
+      public <U> Optional<U> get(Key<U> key2) {
+        return (key == key2)? Optional.of(key2.type.cast(value)): Optional.empty();
+      }
+    };
+  }
+  
+  /*private*/ enum PropertyPreferences implements Preferences {
+    INSTANCE;
+    
+    @Override
+    public <U> Optional<U> get(Key<U> key) {
+      return Optional.ofNullable(System.getProperty(key.name)).map(key.decoder);
     }
-
-    public String getString(String key) {
-        String value = preferences.get(key);
-        if (value != null) {
-            return value;
-        }
-        return System.getProperty(key);
-    }
-
-    public int getInteger(String key) {
-        String value = getString(key);
-        if (value == null) {
-            throw new IllegalArgumentException(key + " is not a known preference");
-        }
-        return Integer.parseInt(value);
-    }
+  }
+  
+  /**
+   * A set of preferences that maps the system properties.
+   * Given that the system property values are strings, the {@link Key#decoder} is used
+   * to transform the string into a real object of the right type.
+   * @return a set of preferences that maps the system properties.
+   */
+  public static Preferences ofProperty() {
+    return PropertyPreferences.INSTANCE;
+  }
 }

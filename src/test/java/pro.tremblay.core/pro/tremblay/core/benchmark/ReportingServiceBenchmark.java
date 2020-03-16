@@ -51,10 +51,6 @@ import java.util.stream.Stream;
 @Fork(2)
 @State(Scope.Benchmark)
 public class ReportingServiceBenchmark {
-  static {
-    System.setProperty("LENGTH_OF_YEAR", "365");
-  }
-
   private final ReportingService service = new ReportingService();
 
   private Collection<Transaction> transactions;
@@ -86,8 +82,8 @@ public class ReportingServiceBenchmark {
   }
 
   @Benchmark
-  public BigDecimal calculate() {
-    return service.calculateReturnOnInvestmentYTD(position, transactions);
+  public BigDecimal calculate() { 
+    return service.calculateReturnOnInvestmentYTD(position, 365, transactions);
   }
 
   public static void main(String[] args) throws RunnerException {

@@ -49,7 +49,7 @@ public class ReportingService {
      * @return annualized return on investment since beginning of the year
      */
     @Nonnull
-    public BigDecimal calculateReturnOnInvestmentYTD(@Nonnull Position current, @Nonnull Collection<Transaction> transactions) {
+    public BigDecimal calculateReturnOnInvestmentYTD(@Nonnull Position current, int yearLength, @Nonnull Collection<Transaction> transactions) {
         LocalDate now = LocalDate.now();
         LocalDate beginningOfYear = now.withDayOfYear(1);
 
@@ -106,7 +106,7 @@ public class ReportingService {
                     .multiply(BigDecimal.valueOf(100L));
         }
 
-        int yearLength = Preferences.preferences().getInteger("LENGTH_OF_YEAR");
+        //int yearLength = Preferences.preferences().getInteger("LENGTH_OF_YEAR");
 
         roi = roi.multiply(BigDecimal.valueOf(yearLength)).divide(BigDecimal.valueOf(now.getDayOfYear()), 2, RoundingMode.HALF_UP);
 
