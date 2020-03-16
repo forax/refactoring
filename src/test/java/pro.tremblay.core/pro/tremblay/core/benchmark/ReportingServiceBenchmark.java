@@ -75,7 +75,7 @@ public class ReportingServiceBenchmark {
 
     TransactionType[] transactionTypes = TransactionType.values();
 
-    Random random = new Random();
+    Random random = new Random(0);
     transactions = random.ints(100, 1, 100).mapToObj(quantity -> {
       Transaction t = new Transaction();
       return t.date(now.minusDays(random.nextInt(dayOfYear))).cash(BigDecimal.valueOf(random.nextInt(1_000)))

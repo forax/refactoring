@@ -32,7 +32,7 @@ public class PriceService {
 
     private static final ConcurrentMap<String, BigDecimal> prices = new ConcurrentHashMap<>();
 
-    private static final Random random = new Random();
+    private static final Random random = new Random(0);
 
     static {
         // Randomly generated price since the beginning of the year
