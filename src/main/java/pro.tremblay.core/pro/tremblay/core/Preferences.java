@@ -23,10 +23,12 @@ import java.util.function.Function;
 import javax.annotation.concurrent.ThreadSafe;
 
 /**
- * A set of preferences of the application.
+ * Global preferences of the application.
  */
 @ThreadSafe
 public interface Preferences {
+  public static final Key<Integer> LENGTH_OF_YEAR = new Key<>("LENGTH_OF_YEAR", Integer.class, Integer::parseInt);
+  
   /**
    * A preference key. 
    * 

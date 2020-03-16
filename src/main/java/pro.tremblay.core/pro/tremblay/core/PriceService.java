@@ -15,60 +15,68 @@
  */
 package pro.tremblay.core;
 
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.ThreadSafe;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+
+import javax.annotation.Nonnull;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
- * Service returning security prices. This is actually a fake implementation using randomly generated prices.
+ * Service returning security prices. This is actually a fake implementation
+ * using randomly generated prices.
  */
 @ThreadSafe
 public class PriceService {
+  private final HashMap<String, BigDecimal> prices;
+  
+  private PriceService(HashMap<String, BigDecimal> prices) {
+    this.prices = prices;
+  }
 
-    private static final ConcurrentMap<String, BigDecimal> prices = new ConcurrentHashMap<>();
-
-    private static final Random random = new Random(0);
-
-    static {
-        // Randomly generated price since the beginning of the year
-        LocalDate now = LocalDate.now();
-        for (Security security : Security.values()) {
-            LocalDate start = now.withDayOfYear(1);
-            BigDecimal price = BigDecimal.valueOf(100 + random.nextInt(200));
-            while(!start.isAfter(now)) {
-                BigDecimal tick = BigDecimal.valueOf(random.nextGaussian()).setScale(2, RoundingMode.HALF_UP);
-                prices.put(getKey(security, start), price.add(tick));
-                start = start.plusDays(1);
-            }
-        }
+  /**
+   * Create a price service that serves random prices.
+   * @return a newly created price service.
+   */
+  public static PriceService createARandomPriceService() {
+    // Randomly generated price since the beginning of the year
+    var random = new Random(0);
+    var now = LocalDate.now();
+    var prices = new HashMap<String, BigDecimal>();
+    for (var security : Security.values()) {
+      var start = now.withDayOfYear(1);
+      var price = BigDecimal.valueOf(100 + random.nextInt(200));
+      while (!start.isAfter(now)) {
+        var tick = BigDecimal.valueOf(random.nextGaussian()).setScale(2, RoundingMode.HALF_UP);
+        prices.put(getKey(security, start), price.add(tick));
+        start = start.plusDays(1);
+      }
     }
+    return new PriceService(prices);
+  }
 
-    private static String getKey(Security security, LocalDate date) {
-        return date + "#" + security;
+  private static String getKey(Security security, LocalDate date) {
+    return date + "#" + security;
+  }
+
+  /**
+   * Returns the price at a given date for a security. The implementation
+   * generates random prices to simulate a real price source. During your
+   * refactoring, please keep the current price generation concept.
+   *
+   * @param date     date on which we want the price
+   * @param security security for which we want a price
+   * @throws IllegalArgumentException if no price is found at this date
+   * @return the price of the security at a given date
+   */
+  @Nonnull
+  public BigDecimal getPrice(@Nonnull LocalDate date, @Nonnull Security security) {
+    var price = prices.get(getKey(security, date));
+    if (price == null) {
+      throw new IllegalArgumentException("No price for " + security + " on " + date);
     }
-
-    /**
-     * Returns the price at a given date for a security. The implementation generates random prices to
-     * simulate a real price source. During your refactoring, please keep the current price generation concept.
-     *
-     * @param date date on which we want the price
-     * @param security security for which we want a price
-     * @throws IllegalArgumentException if no price is found at this date
-     * @return the price of the security at a given date
-     */
-    @Nonnull
-    public static BigDecimal getPrice(@Nonnull LocalDate date, @Nonnull Security security) {
-        BigDecimal price = prices.get(getKey(security, date));
-        if(price == null) {
-            throw new IllegalArgumentException("No price for " + security + " on " + date);
-        }
-        return price;
-    }
-
-    private PriceService() {}
+    return price;
+  }
 }

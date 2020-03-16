@@ -30,6 +30,8 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import pro.tremblay.core.Position;
+import pro.tremblay.core.Preferences;
+import pro.tremblay.core.PriceService;
 import pro.tremblay.core.ReportingService;
 import pro.tremblay.core.Security;
 import pro.tremblay.core.SecurityPosition;
@@ -51,8 +53,10 @@ import java.util.stream.Stream;
 @Fork(2)
 @State(Scope.Benchmark)
 public class ReportingServiceBenchmark {
-  private final ReportingService service = new ReportingService();
-
+  private final Preferences preferences = Preferences.of(Preferences.LENGTH_OF_YEAR, 365);
+  private final PriceService priceService = PriceService.createARandomPriceService();
+  private final ReportingService service = new ReportingService(preferences, priceService);
+  
   private Collection<Transaction> transactions;
   private Position position;
 
@@ -83,7 +87,7 @@ public class ReportingServiceBenchmark {
 
   @Benchmark
   public BigDecimal calculate() { 
-    return service.calculateReturnOnInvestmentYTD(position, 365, transactions);
+    return service.calculateReturnOnInvestmentYTD(position, transactions);
   }
 
   public static void main(String[] args) throws RunnerException {
