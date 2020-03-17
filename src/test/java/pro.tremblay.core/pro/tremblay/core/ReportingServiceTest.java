@@ -26,14 +26,16 @@ import static pro.tremblay.core.TransactionType.BUY;
 import static pro.tremblay.core.TransactionType.DEPOSIT;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 public class ReportingServiceTest {
   private final Preferences preferences = Preferences.of(LENGTH_OF_YEAR, 360);
-  private final PriceService priceService = PriceService.createARandomPriceService();
-  private final ReportingService reportingService = new ReportingService(preferences, priceService);
+  private final DateService dateService = new DateService(LocalDate::now);
+  private final PriceService priceService = PriceService.createARandomPriceService(dateService);
+  private final ReportingService reportingService = new ReportingService(preferences, priceService, dateService);
   
   @Test
   public void calculateReturnOnInvestmentYTD_noTransactionAndPosition() {

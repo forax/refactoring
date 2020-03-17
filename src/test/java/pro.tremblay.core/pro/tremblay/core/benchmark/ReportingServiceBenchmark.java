@@ -36,6 +36,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import pro.tremblay.core.DateService;
 import pro.tremblay.core.Position;
 import pro.tremblay.core.Preferences;
 import pro.tremblay.core.PriceService;
@@ -52,8 +53,9 @@ import pro.tremblay.core.TransactionType;
 @State(Scope.Benchmark)
 public class ReportingServiceBenchmark {
   private final Preferences preferences = Preferences.of(Preferences.LENGTH_OF_YEAR, 365);
-  private final PriceService priceService = PriceService.createARandomPriceService();
-  private final ReportingService service = new ReportingService(preferences, priceService);
+  private final DateService dateService = new DateService(LocalDate::now);
+  private final PriceService priceService = PriceService.createARandomPriceService(dateService);
+  private final ReportingService service = new ReportingService(preferences, priceService, dateService);
   
   private Collection<Transaction> transactions;
   private Position position;

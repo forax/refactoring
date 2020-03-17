@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Random;
 
 import javax.annotation.Nonnull;
@@ -38,12 +39,14 @@ public class PriceService {
 
   /**
    * Create a price service that serves random prices.
+   * @param dateService service that provides the current date.
    * @return a newly created price service.
    */
-  public static PriceService createARandomPriceService() {
+  public static PriceService createARandomPriceService(@Nonnull DateService dateService) {
+    Objects.requireNonNull(dateService);
     // Randomly generated price since the beginning of the year
     var random = new Random(0);
-    var now = LocalDate.now();
+    var now = dateService.currentDate();
     var prices = new HashMap<String, BigDecimal>();
     for (var security : Security.values()) {
       var start = now.withDayOfYear(1);

@@ -38,10 +38,18 @@ import javax.annotation.concurrent.ThreadSafe;
 public class ReportingService {
   private final Preferences preferences;
   private final PriceService priceService;
+  private final DateService dateService;
 
-  public ReportingService(pro.tremblay.core.Preferences preferences, PriceService priceService) {
+  /**
+   * Create the reporting service from preferences, a price service and a date service.
+   * @param preferences the preferences used to get the {@code LENGTH_OF_YEAR}
+   * @param priceService the price service to get the price of the security
+   * @param dateService the date service to get the current time
+   */
+  public ReportingService(@Nonnull Preferences preferences, @Nonnull PriceService priceService, @Nonnull DateService dateService) {
     this.preferences = requireNonNull(preferences);
     this.priceService = requireNonNull(priceService);
+    this.dateService = requireNonNull(dateService);
   }
 
   /**
@@ -73,7 +81,7 @@ public class ReportingService {
     requireNonNull(current);
     requireNonNull(transactions);
       
-    var now = LocalDate.now();
+    var now = dateService.currentDate();
     var beginningOfYear = now.withDayOfYear(1);
 
     var working = current.duplicate();
