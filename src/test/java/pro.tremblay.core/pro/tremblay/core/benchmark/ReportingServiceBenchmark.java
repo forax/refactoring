@@ -15,6 +15,13 @@
  */
 package pro.tremblay.core.benchmark;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -34,17 +41,8 @@ import pro.tremblay.core.Preferences;
 import pro.tremblay.core.PriceService;
 import pro.tremblay.core.ReportingService;
 import pro.tremblay.core.Security;
-import pro.tremblay.core.SecurityPosition;
 import pro.tremblay.core.Transaction;
 import pro.tremblay.core.TransactionType;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -62,13 +60,13 @@ public class ReportingServiceBenchmark {
 
   @Setup
   public void setup() {
-    var securities = Security.values();
-    var securityPositions = Stream.of(securities)
-        .map(sec -> new SecurityPosition().quantity(BigDecimal.valueOf(1_000)).security(sec))
-        .collect(Collectors.toList());
-
-    position = new Position().cash(BigDecimal.valueOf(1_000_000)).securityPositions(securityPositions);
-
+    var securities = Security.securities();
+    var position = new Position(BigDecimal.valueOf(1_000_000));
+    for(var security: securities) {
+      position.quantity(security, BigDecimal.valueOf(1_000));
+    }
+    this.position = position;
+    
     var now = LocalDate.now();
     var dayOfYear = now.getDayOfYear();
 
@@ -79,10 +77,10 @@ public class ReportingServiceBenchmark {
       var type = transactionTypes[random.nextInt(transactionTypes.length)];
       var date = now.minusDays(random.nextInt(dayOfYear));
       var cash = BigDecimal.valueOf(random.nextInt(1_000));
-      var security = type.hasQuantity() ? securities[random.nextInt(securities.length)] : null;
+      var security = type.hasQuantity() ? securities.get(random.nextInt(securities.size())) : null;
       var quantity = type.hasQuantity() ? BigDecimal.valueOf(value) : BigDecimal.ZERO;
       return new Transaction(type, date, cash, security, quantity);
-    }).collect(Collectors.toUnmodifiableList());
+    }).collect(Collectors.toList());
   }
 
   @Benchmark

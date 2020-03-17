@@ -25,7 +25,7 @@ import static pro.tremblay.core.Security.GOOGL;
 import static pro.tremblay.core.TransactionType.BUY;
 import static pro.tremblay.core.TransactionType.DEPOSIT;
 
-import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 
@@ -38,15 +38,14 @@ public class ReportingServiceTest {
   
   @Test
   public void calculateReturnOnInvestmentYTD_noTransactionAndPosition() {
-    var current = new Position().cash(ZERO).securityPositions(new ArrayList<>());
+    var current = new Position(ZERO);
     var roi = reportingService.calculateReturnOnInvestmentYTD(current, Collections.emptyList());
     assertEquals(bd(0.00), roi);
   }
 
   @Test
   public void calculateReturnOnInvestmentYTD_cashAdded() {
-    var current = new Position().cash(ZERO).securityPositions(new ArrayList<>());
-    current.cash(bd(200));
+    var current = new Position(bd(200));
 
     var now = now();
     var transactions = List.of(new Transaction(DEPOSIT, now.minusDays(10), bd(100), null, ZERO));
@@ -62,8 +61,8 @@ public class ReportingServiceTest {
 
   @Test
   public void calculateReturnOnInvestmentYTD_secBought() {
-    var current = new Position().cash(ZERO).securityPositions(new ArrayList<>());
-    current.getSecurityPositions().add(new SecurityPosition().security(GOOGL).quantity(bd(50)));
+    var current = new Position(BigDecimal.ZERO);
+    current.quantity(GOOGL, bd(50));
 
     var now = now();
     var priceAtTransaction = priceService.getPrice(now.minusDays(10), GOOGL);

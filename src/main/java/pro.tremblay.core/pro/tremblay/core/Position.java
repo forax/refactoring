@@ -15,35 +15,59 @@
  */
 package pro.tremblay.core;
 
-import javax.annotation.concurrent.NotThreadSafe;
+import static java.math.BigDecimal.ZERO;
+import static java.util.Objects.requireNonNull;
+
 import java.math.BigDecimal;
-import java.util.Collection;
+import java.util.Arrays;
+
+import javax.annotation.concurrent.NotThreadSafe;
 
 /**
- * All positions (cash and security) of a user. There is only one cash position since we are trading in only one
- * currency.
+ * All positions (cash and security) of a user. There is only one cash position
+ * since we are trading in only one currency.
  */
 @NotThreadSafe
-public class Position {
+public final class Position {
+  private static final int SECURITY_COUNT = Security.securities().size();
 
-    private BigDecimal cash;
-    private Collection<SecurityPosition> securityPositions;
+  private BigDecimal cash;
+  private final BigDecimal[] quantities;
 
-    public BigDecimal getCash() {
-        return cash;
-    }
+  private Position(BigDecimal cash, BigDecimal[] quantities) {
+    this.cash = cash;
+    this.quantities = quantities;
+  }
 
-    public Position cash(BigDecimal cash) {
-        this.cash = cash;
-        return this;
-    }
+  public Position(BigDecimal cash) {
+    this.cash = requireNonNull(cash);
+    BigDecimal[] quantities = new BigDecimal[SECURITY_COUNT];
+    Arrays.fill(quantities, ZERO);
+    this.quantities = quantities;
+  }
+  
+  public Position duplicate() {
+    return new Position(cash, Arrays.copyOf(quantities, quantities.length));
+  }
 
-    public Collection<SecurityPosition> getSecurityPositions() {
-        return securityPositions;
-    }
+  public BigDecimal cash() {
+    return cash;
+  }
 
-    public Position securityPositions(Collection<SecurityPosition> securityPositions) {
-        this.securityPositions = securityPositions;
-        return this;
-    }
+  public Position cash(BigDecimal cash) {
+    this.cash = requireNonNull(cash);
+    return this;
+  }
+
+  public BigDecimal quantity(Security security) {
+    requireNonNull(security);
+    return quantities[security.ordinal()];
+  }
+
+  public Position quantity(Security security, BigDecimal quantity) {
+    requireNonNull(security);
+    requireNonNull(quantity);
+    quantities[security.ordinal()] = quantity;
+    return this;
+  }
 }

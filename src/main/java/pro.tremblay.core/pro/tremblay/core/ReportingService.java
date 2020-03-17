@@ -15,16 +15,18 @@
  */
 package pro.tremblay.core;
 
+import static java.math.BigDecimal.ZERO;
+import static java.math.RoundingMode.HALF_UP;
+import static java.math.RoundingMode.UNNECESSARY;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
+import static pro.tremblay.core.BigDecimalUtil.bd;
 import static pro.tremblay.core.Preferences.LENGTH_OF_YEAR;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
@@ -67,29 +69,25 @@ public class ReportingService {
    * @return annualized return on investment since beginning of the year
    */
   @Nonnull
-  public BigDecimal calculateReturnOnInvestmentYTD(@Nonnull Position current,
-      @Nonnull Collection<Transaction> transactions) {
-    LocalDate now = LocalDate.now();
-    LocalDate beginningOfYear = now.withDayOfYear(1);
+  public BigDecimal calculateReturnOnInvestmentYTD(@Nonnull Position current, @Nonnull Collection<Transaction> transactions) {
+    requireNonNull(current);
+    requireNonNull(transactions);
+      
+    var now = LocalDate.now();
+    var beginningOfYear = now.withDayOfYear(1);
 
-    Position working = new Position().cash(current.getCash());
+    var working = current.duplicate();
 
-    List<SecurityPosition> positions = current
-        .getSecurityPositions().stream().map(securityPosition -> new SecurityPosition()
-            .quantity(securityPosition.getQuantity()).security(securityPosition.getSecurity()))
-        .collect(Collectors.toList());
-    working.securityPositions(positions);
+    var orderedTransaction = transactions.stream()
+        .sorted(Comparator.comparing(Transaction::date).reversed()).collect(toList());
 
-    List<Transaction> orderedTransaction = transactions.stream()
-        .sorted(Comparator.comparing(Transaction::date).reversed()).collect(Collectors.toList());
-
-    LocalDate today = now;
-    int transactionIndex = 0;
+    var today = now;
+    var transactionIndex = 0;
     while (!today.isBefore(beginningOfYear)) {
       if (transactionIndex >= orderedTransaction.size()) {
         break;
       }
-      Transaction transaction = orderedTransaction.get(transactionIndex);
+      var transaction = orderedTransaction.get(transactionIndex);
       // It's a transaction on the date, process it
       if (transaction.date().equals(today)) {
         revert(working, transaction);
@@ -97,66 +95,47 @@ public class ReportingService {
       today = today.minusDays(1);
     }
 
-    BigDecimal initialCashValue = working.getCash();
-    BigDecimal currentCashValue = current.getCash();
+    var initialCashValue = working.cash();
+    var currentCashValue = current.cash();
 
-    BigDecimal initialSecPosValue = working.getSecurityPositions().stream()
-        .map(securityPosition -> securityPosition.getQuantity()
-            .multiply(priceService.getPrice(beginningOfYear, securityPosition.getSecurity())))
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-    BigDecimal currentSecPosValue = current.getSecurityPositions().stream()
-        .map(securityPosition -> securityPosition.getQuantity()
-            .multiply(priceService.getPrice(now, securityPosition.getSecurity())))
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    var initialSecPosValue = securitiesPositionValue(working, beginningOfYear);
+    var currentSecPosValue = securitiesPositionValue(current, now);
 
-    BigDecimal initialValue = initialCashValue.add(initialSecPosValue);
+    var initialValue = initialCashValue.add(initialSecPosValue);
 
     BigDecimal roi;
     if (initialValue.signum() == 0) {
-      roi = BigDecimal.ZERO.setScale(10, RoundingMode.UNNECESSARY);
+      roi = ZERO.setScale(10, UNNECESSARY);
     } else {
       roi = currentCashValue.add(currentSecPosValue).subtract(initialValue)
-          .divide(initialValue, 10, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100L));
+          .divide(initialValue, 10, HALF_UP).multiply(bd(100));
     }
-
-    int yearLength = preferences.get(LENGTH_OF_YEAR).orElseThrow();
-
-    roi = roi.multiply(BigDecimal.valueOf(yearLength)).divide(BigDecimal.valueOf(now.getDayOfYear()), 2,
-        RoundingMode.HALF_UP);
-
+    var yearLength = preferences.get(LENGTH_OF_YEAR).orElseThrow();
+    roi = roi.multiply(bd(yearLength)).divide(bd(now.getDayOfYear()), 2, HALF_UP);
     return roi;
   }
 
+  private BigDecimal securitiesPositionValue(Position position, LocalDate date) {
+    // using a stream here is less efficient
+    var sum = ZERO;
+    for(var security: Security.securities()) {
+      sum = sum.add(position.quantity(security).multiply(priceService.getPrice(date, security)));
+    }
+    return sum;
+  }
+  
   private static void revert(Position current, Transaction transaction) {
     switch (transaction.type()) {
-    case BUY: {
-      current.cash(current.getCash().add(transaction.cash()));
-      SecurityPosition pos = current.getSecurityPositions().stream()
-          .filter(sec -> sec.getSecurity().equals(transaction.security())).findAny().orElse(null);
-      if (pos == null) {
-        pos = new SecurityPosition().quantity(BigDecimal.ZERO).security(transaction.security());
-        current.getSecurityPositions().add(pos);
-      }
-      pos.quantity(pos.getQuantity().subtract(transaction.quantity()));
-      break;
+    case BUY -> {
+      current.cash(current.cash().add(transaction.cash()));
+      current.quantity(transaction.security(), current.quantity(transaction.security()).subtract(transaction.quantity()));
     }
-    case SELL:
-      current.cash(current.getCash().subtract(transaction.cash()));
-      SecurityPosition pos = current.getSecurityPositions().stream()
-          .filter(sec -> sec.getSecurity().equals(transaction.security())).findAny().orElse(null);
-      if (pos == null) {
-        pos = new SecurityPosition().quantity(BigDecimal.ZERO).security(transaction.security());
-        current.getSecurityPositions().add(pos);
-      }
-      pos.quantity(pos.getQuantity().add(transaction.quantity()));
-      break;
-    case DEPOSIT:
-      current.cash(current.getCash().subtract(transaction.cash()));
-      break;
-    case WITHDRAWAL:
-      current.cash(current.getCash().add(transaction.cash()));
-      break;
+    case SELL -> {
+      current.cash(current.cash().subtract(transaction.cash()));
+      current.quantity(transaction.security(), current.quantity(transaction.security()).add(transaction.quantity()));
+    }
+    case DEPOSIT -> current.cash(current.cash().subtract(transaction.cash()));
+    case WITHDRAWAL -> current.cash(current.cash().add(transaction.cash()));
     }
   }
-
 }
