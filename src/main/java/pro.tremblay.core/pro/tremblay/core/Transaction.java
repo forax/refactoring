@@ -27,13 +27,22 @@ import java.time.LocalDate;
  */
 @ThreadSafe
 public record Transaction(
-    TransactionType type,   // Type of transaction
-    LocalDate date,         // Date at which the transaction occurred
-    BigDecimal cash,        // Amount of cash exchanged during the transaction.
-                            // The amount is always positive, the side of the transaction is determined by its type
-    Security security,      // Security bought or sold if a security is involved in the transaction
-    BigDecimal quantity     // Quantity of securities exchanged during the transaction.
-                            // The quantity is always positive, the side of the transaction is determined by its type
+    /** Type of transaction */
+    TransactionType type,
+    /** Date at which the transaction occurred */
+    LocalDate date,
+    /** 
+     * Amount of cash exchanged during the transaction.
+     * The amount is always positive, the side of the transaction is determined by its type
+     */
+    BigDecimal cash,
+    /** Security bought or sold if a security is involved in the transaction */
+    Security security,
+    /**
+     * Quantity of securities exchanged during the transaction.
+     * The quantity is always positive, the side of the transaction is determined by its type
+     */
+    BigDecimal quantity
     ) {
   public Transaction {
     requireNonNull(type);
