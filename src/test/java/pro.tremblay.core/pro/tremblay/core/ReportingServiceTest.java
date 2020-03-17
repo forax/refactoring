@@ -26,7 +26,6 @@ import static pro.tremblay.core.TransactionType.BUY;
 import static pro.tremblay.core.TransactionType.DEPOSIT;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -39,7 +38,7 @@ public class ReportingServiceTest {
   @Test
   public void calculateReturnOnInvestmentYTD_noTransactionAndPosition() {
     var current = new Position(ZERO);
-    var roi = reportingService.calculateReturnOnInvestmentYTD(current, Collections.emptyList());
+    var roi = reportingService.calculateReturnOnInvestmentYTD(current, List.of());
     assertEquals(bd(0.00), roi);
   }
 
@@ -68,7 +67,7 @@ public class ReportingServiceTest {
     var priceAtTransaction = priceService.getPrice(now.minusDays(10), GOOGL);
 
     var transaction = new Transaction(BUY, now.minusDays(10), priceAtTransaction.multiply(bd(50)), GOOGL, bd(50));
-    var transactions = Collections.singleton(transaction);
+    var transactions = List.of(transaction);
 
     var roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
 
