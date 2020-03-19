@@ -17,7 +17,6 @@ package pro.tremblay.core;
 
 import static java.math.BigDecimal.ZERO;
 import static java.math.RoundingMode.HALF_UP;
-import static java.time.LocalDate.now;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static pro.tremblay.core.BigDecimalUtil.bd;
 import static pro.tremblay.core.Preferences.LENGTH_OF_YEAR;
@@ -36,7 +35,7 @@ public class ReportingServiceTest {
   private final DateService dateService = new DateService(LocalDate::now);
   private final PriceService priceService = PriceService.createARandomPriceService(dateService);
   private final ReportingService reportingService = new ReportingService(preferences, priceService, dateService);
-  
+
   @Test
   public void calculateReturnOnInvestmentYTD_noTransactionAndPosition() {
     var current = new Position(ZERO);
@@ -48,7 +47,7 @@ public class ReportingServiceTest {
   public void calculateReturnOnInvestmentYTD_cashAdded() {
     var current = new Position(bd(200));
 
-    var now = now();
+    var now = dateService.currentDate();
     var transactions = List.of(new Transaction(DEPOSIT, now.minusDays(10), bd(100), null, ZERO));
 
     var roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
@@ -65,7 +64,7 @@ public class ReportingServiceTest {
     var current = new Position(BigDecimal.ZERO);
     current.quantity(GOOGL, bd(50));
 
-    var now = now();
+    var now = dateService.currentDate();
     var priceAtTransaction = priceService.getPrice(now.minusDays(10), GOOGL);
 
     var transaction = new Transaction(BUY, now.minusDays(10), priceAtTransaction.multiply(bd(50)), GOOGL, bd(50));
@@ -78,8 +77,42 @@ public class ReportingServiceTest {
     var initialCashValue = transaction.cash(); // initialSecValue = 0
     var currentSecValue = priceNow.multiply(bd(50)); // currentCashValue = 0
 
-    var actual = currentSecValue.subtract(initialCashValue).divide(initialCashValue, 10, HALF_UP)
-        .multiply(bd(100)).multiply(bd(360)).divide(bd(now.getDayOfYear()), 2, HALF_UP);
+    var actual = currentSecValue.subtract(initialCashValue).divide(initialCashValue, 10, HALF_UP).multiply(bd(100))
+        .multiply(bd(360)).divide(bd(now.getDayOfYear()), 2, HALF_UP);
+    assertEquals(actual, roi);
+  }
+
+  @Test
+  public void calculateReturnOnInvestmentYTD_twoCashTransactions() {
+    var current = new Position(bd(200));
+
+    var now = dateService.currentDate();
+    var transactions = List.of(new Transaction(DEPOSIT, now.minusDays(10), bd(100), null, ZERO),
+        new Transaction(DEPOSIT, now.minusDays(9), bd(50), null, ZERO));
+
+    var roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
+
+    // Current cash value = 200$, Current security value = 0$
+    // Initial cash value = 50$, Initial cash value = 0$
+    // Year length = 360
+    var actual = bd((200.0 - 50.0) / 50.0 * 100.0 * 360.0 / now.getDayOfYear());
+    assertEquals(actual, roi);
+  }
+
+  @Test
+  public void calculateReturnOnInvestmentYTD_twoCashTransactionsOnTheSameDay() {
+    var current = new Position(bd(200));
+
+    var now = dateService.currentDate();
+    var transactions = List.of(new Transaction(DEPOSIT, now.minusDays(10), bd(100), null, ZERO),
+        new Transaction(DEPOSIT, now.minusDays(10), bd(50), null, ZERO));
+
+    var roi = reportingService.calculateReturnOnInvestmentYTD(current, transactions);
+
+    // Current cash value = 200$, Current security value = 0$
+    // Initial cash value = 50$, Initial cash value = 0$
+    // Year length = 360
+    var actual = bd((200.0 - 50.0) / 50.0 * 100.0 * 360.0 / now.getDayOfYear());
     assertEquals(actual, roi);
   }
 }

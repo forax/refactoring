@@ -92,15 +92,21 @@ public class ReportingService {
     var today = now;
     var transactionIndex = 0;
     while (!today.isBefore(beginningOfYear)) {
-      if (transactionIndex >= orderedTransaction.size()) {
-        break;
-      }
-      var transaction = orderedTransaction.get(transactionIndex);
-      // It's a transaction on the date, process it
-      if (transaction.date().equals(today)) {
-        revert(working, transaction);
-      }
-      today = today.minusDays(1);
+        if (transactionIndex >= orderedTransaction.size())  {
+            break;
+        }
+        var transaction = orderedTransaction.get(transactionIndex);
+        while (transaction.date().equals(today)) {
+            // It's a transaction on the date, process it
+            revert(working, transaction);
+            transactionIndex++;
+            if (transactionIndex >= orderedTransaction.size())  {
+                break;
+            }
+            transaction = orderedTransaction.get(transactionIndex);
+        }
+
+        today = today.minusDays(1);
     }
 
     var initialCashValue = working.cash();

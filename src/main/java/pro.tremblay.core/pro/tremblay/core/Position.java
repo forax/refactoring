@@ -16,7 +16,11 @@
 package pro.tremblay.core;
 
 import static java.math.BigDecimal.ZERO;
+import static java.util.Arrays.copyOf;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.IntStream.range;
+import static pro.tremblay.core.Security.securities;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -29,7 +33,7 @@ import javax.annotation.concurrent.NotThreadSafe;
  */
 @NotThreadSafe
 public final class Position {
-  private static final int SECURITY_COUNT = Security.securities().size();
+  private static final int SECURITY_COUNT = securities().size();
 
   private BigDecimal cash;
   private final BigDecimal[] quantities;
@@ -47,7 +51,7 @@ public final class Position {
   }
   
   public Position duplicate() {
-    return new Position(cash, Arrays.copyOf(quantities, quantities.length));
+    return new Position(cash, copyOf(quantities, quantities.length));
   }
 
   public BigDecimal cash() {
@@ -69,5 +73,13 @@ public final class Position {
     requireNonNull(quantity);
     quantities[security.ordinal()] = quantity;
     return this;
+  }
+  
+  @Override
+  public String toString() {
+      return "Position{" +
+          "cash=" + cash +
+          ", quantities=" + range(0, quantities.length).mapToObj(i -> securities().get(i) + ": " + quantities[i]).collect(joining(", ", "[", "]")) + 
+          '}';
   }
 }
